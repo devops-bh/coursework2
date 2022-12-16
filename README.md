@@ -16,4 +16,4 @@ sh "ansible-playbook -i inventory ansible-kube-release.yml --tags update"
 
 Remember to make sure the IPs are correct (when using dynamic IPs [and not elastic associated IPs])
 
-testing gh + jenkins
+testing gh + jenkins with https
