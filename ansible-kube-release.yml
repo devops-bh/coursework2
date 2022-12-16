@@ -1,0 +1,39 @@
+- name: deploy & update via kubernetes (via ansible-tags)
+  hosts: production
+  become: yes
+  become_user: ubuntu
+  gather_facts: yes
+  tasks:
+  # will run this once manually then Jenkins will run the --tags "update"
+  - name: Start Minikube ( ASSUMES MINIKUBE IS NOT RUNNING & DEPLOYMENT DOES NOT EXIST - WILL FAIL OTHERWISE)
+    shell:
+      cmd: minikube start driver=Docker
+
+  - name: create deployment 
+    shell:
+      cmd: kubectl create deployment nodeapp --image=devopsbh/nodeapp
+
+  # the Kubectl deployment takes sometime to be ready (i.e. spin up) so I don't think unready deployments can be exposed 
+  - name: Pause for 1 minute to let deployment get ready 
+    ansible.builtin.pause:
+      minutes: 1
+
+  - name: Expose deployment as a service 
+    raw: kubectl expose deployment/nodeapp --type="NodePort" --port 8080 --name node-port-service
+
+  - name: scale deployment 
+    shell:
+      cmd: kubectl scale deployments/nodeapp --replicas=4
+
+  - meta: end_play
+
+  # JENKINS WILL ONLY RUN THIS (via --tags update)
+  - name: Rolling updates 
+    shell: 
+      cmd: kubectl set image deployments/nodeapp nodeapp=devopsbh/nodeapp:latest
+      cmd: kubectl rollout status deployments/nodeapp
+    tags: [update]
+
+  # the above task hangs without this task (no idea why)
+  - name: debug 
+    debug: var=shell_output

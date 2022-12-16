@@ -1,0 +1,48 @@
+- name: install kubernetes
+  hosts: production
+  user: ubuntu
+  become: true
+  tasks:
+  - name: 1. Update APT Package Manager
+    apt:
+      update_cache: yes
+
+  - name: 2. Install depency packages
+    apt: name={{ item }}
+    with_items:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg-agent
+      - software-properties-common
+
+
+  - name: 3. Add APT key
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+
+
+  - name: 4. Add APT repository
+    apt_repository:
+      repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: /etc/apt/sources.list.d/kubernetes.list
+
+
+  - name: 5. Update APT Package Manager
+    apt:
+      update_cache: yes
+      #name: kubectl 
+
+  - name: 6. Install kubectl
+    apt: name={{ item }}
+    with_items:
+      - kubectl
+
+  - name: 7. download [ansible-get-url] minikube (I'm hoping Ansible relaises the minikube is a text file without an extension)
+    ansible.builtin.get_url:
+      url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      dest: /usr/local/bin/minikube
+      mode: '+x'
+
+
